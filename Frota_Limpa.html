@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<!-- saved from url=(0058)file:///C:/Users/ajmonteiro/Downloads/Frota_Dashboard.html -->
+<html lang="pt-PT"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frota</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #EEF1EE;
+    --panel: #FFFFFF;
+    --ink: #14181C;
+    --ink-soft: #55606B;
+    --line: #D9DDD6;
+    --amber: #C68A16;
+    --amber-soft: #F3E3C2;
+    --green: #2F6E4F;
+    --green-soft: #DCEAE1;
+    --red: #B23A2E;
+    --red-soft: #F4DEDA;
+    --blue: #35577A;
+    --blue-soft: #DCE5EC;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Space Grotesk',sans-serif;
+    line-height:1.4;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .wrap{max-width:1240px;margin:0 auto;padding:28px 24px 80px;}
+
+  /* HEADER */
+  header.top{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:18px;margin-bottom:22px;flex-wrap:wrap;gap:16px;
+  }
+  .brandblock h1{
+    font-size:28px;font-weight:700;margin:0;letter-spacing:-0.01em;
+  }
+  .brandblock .sub{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-soft);
+    margin-top:4px;
+  }
+  .upload-zone{
+    display:flex;align-items:center;gap:10px;
+  }
+  .upload-zone label.filebtn{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+    border:1.5px solid var(--ink);padding:9px 14px;cursor:pointer;
+    background:var(--ink);color:#fff;transition:opacity .15s ease;
+  }
+  .upload-zone label.filebtn:hover{opacity:.82;}
+  .upload-zone input[type=file]{display:none;}
+  .upload-status{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-soft);max-width:260px;}
+
+  /* DROP OVERLAY */
+  #dropOverlay{
+    position:fixed;inset:0;background:rgba(20,24,28,.88);
+    display:none;align-items:center;justify-content:center;z-index:50;
+    color:#fff;font-family:'IBM Plex Mono',monospace;font-size:15px;
+    border: 6px dashed var(--amber);
+  }
+  #dropOverlay.active{display:flex;}
+
+  /* KPI ROW */
+  .kpis{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:1px;
+    background:var(--line);border:1px solid var(--line);margin-bottom:22px;
+  }
+  .kpi{background:var(--panel);padding:16px 16px 14px;}
+  .kpi .label{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.06em;
+  }
+  .kpi .value{
+    font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:26px;margin-top:6px;
+    letter-spacing:-0.01em;
+  }
+  .kpi .value.electric{color:var(--green);}
+  .kpi .value.alert{color:var(--amber);}
+  .kpi .foot{font-size:11px;color:var(--ink-soft);margin-top:4px;}
+
+  /* PANELS */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  .panel{
+    background:var(--panel);border:1px solid var(--line);padding:18px 18px 8px;
+  }
+  .panel h2{
+    font-size:14px;font-weight:600;margin:0 0 2px;
+  }
+  .panel .desc{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);margin-bottom:12px;}
+  .chartbox{position:relative;height:230px;}
+  .chartbox.tall{height:260px;}
+  .panel.full{grid-column:1/-1;}
+
+  /* RENEWALS */
+  .renew-list{display:flex;flex-direction:column;}
+  .renew-row{
+    display:grid;grid-template-columns:90px 1fr 140px 90px 90px;
+    gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);
+    font-size:12.5px;
+  }
+  .renew-row:last-child{border-bottom:none;}
+  .renew-row .plate{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .renew-row .who{color:var(--ink-soft);font-size:11.5px;}
+  .renew-row .days{
+    font-family:'IBM Plex Mono',monospace;text-align:right;font-weight:600;
+    padding:2px 8px;
+  }
+  .days.d-urgent{background:var(--red-soft);color:var(--red);}
+  .days.d-soon{background:var(--amber-soft);color:var(--amber);}
+  .days.d-ok{color:var(--ink-soft);}
+  .renew-row .cost{font-family:'IBM Plex Mono',monospace;text-align:right;}
+  .renew-head{
+    display:grid;grid-template-columns:90px 1fr 140px 90px 90px;gap:10px;
+    font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--ink-soft);padding-bottom:6px;border-bottom:1.5px solid var(--ink);
+  }
+  .renew-head .r-right{text-align:right;}
+
+  /* TABLE / FILTERS */
+  .filters{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;
+    position:relative;
+  }
+  .filters input[type=text]{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    border:1px solid var(--line);background:var(--panel);padding:8px 10px;color:var(--ink);
+    flex:1;min-width:180px;
+  }
+  .filters .count{
+    margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-soft);
+  }
+  .filters .clearbtn{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;
+    border:1px solid var(--line);background:var(--panel);color:var(--ink-soft);
+    padding:8px 10px;cursor:pointer;
+  }
+  .filters .clearbtn:hover{border-color:var(--ink);color:var(--ink);}
+
+  /* MULTI-SELECT FILTERS */
+  .msfilter{position:relative;}
+  .msfilter .ms-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    border:1px solid var(--line);background:var(--panel);padding:8px 10px;color:var(--ink);
+    cursor:pointer;white-space:nowrap;
+  }
+  .msfilter .ms-btn:hover{border-color:var(--ink);}
+  .msfilter .ms-btn.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .msfilter .ms-panel{
+    display:none;position:absolute;top:calc(100% + 5px);left:0;
+    background:var(--panel);border:1px solid var(--ink);
+    min-width:220px;max-width:280px;max-height:260px;overflow-y:auto;
+    z-index:30;padding:4px 0;box-shadow:0 2px 0 var(--line);
+  }
+  .msfilter.open .ms-panel{display:block;}
+  .ms-opt{
+    display:flex;align-items:center;gap:8px;padding:6px 12px;
+    font-size:12.5px;cursor:pointer;font-family:'Space Grotesk',sans-serif;
+  }
+  .ms-opt:hover{background:#F3F4F0;}
+  .ms-opt input{accent-color:var(--ink);cursor:pointer;}
+  .ms-empty{padding:8px 12px;color:var(--ink-soft);font-size:12px;}
+
+  table.datatable{
+    width:100%;border-collapse:collapse;font-size:12.5px;
+  }
+  table.datatable thead th{
+    text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10px;
+    text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);
+    border-bottom:1.5px solid var(--ink);padding:8px 8px;cursor:pointer;user-select:none;
+    white-space:nowrap;
+  }
+  table.datatable thead th:hover{color:var(--ink);}
+  table.datatable thead th.sorted::after{content:" ▾";font-size:9px;}
+  table.datatable tbody td{
+    padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  table.datatable tbody tr:hover{background:#F7F8F5;}
+  td.num,th.num{font-family:'IBM Plex Mono',monospace;text-align:right;}
+  .tag{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:2px 6px;
+    display:inline-block;
+  }
+  .tag.electric{background:var(--green-soft);color:var(--green);}
+  .tag.fuel{background:var(--blue-soft);color:var(--blue);}
+  .tag.attributed{background:var(--blue-soft);color:var(--blue);}
+  .tag.service{background:var(--amber-soft);color:var(--amber);}
+  .pager{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;
+  }
+  .pager button{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--line);
+    background:var(--panel);padding:6px 12px;cursor:pointer;
+  }
+  .pager button:disabled{opacity:.35;cursor:default;}
+  .pager button:not(:disabled):hover{border-color:var(--ink);}
+
+  footer.note{
+    margin-top:30px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);
+    border-top:1px solid var(--line);padding-top:14px;
+  }
+
+  @media (max-width:860px){
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    .grid2{grid-template-columns:1fr;}
+    .renew-row, .renew-head{grid-template-columns:70px 1fr 70px;}
+    .renew-row .who, .renew-head .r-cost, .renew-row .cost{display:none;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+
+  /* ===== v2: menu lateral e novas vistas ===== */
+  body{padding-left:224px;}
+  aside.side{position:fixed;left:0;top:0;bottom:0;width:224px;background:var(--ink);color:#fff;padding:20px 12px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;z-index:20;}
+  aside.side .logo{font-weight:700;font-size:20px;padding:0 10px 14px;border-bottom:1px solid #3a424a;margin-bottom:10px;}
+  aside.side .logo small{display:block;font:400 10.5px 'IBM Plex Mono',monospace;color:#9aa4ad;margin-top:3px;}
+  .nav-btn{font-family:'IBM Plex Mono',monospace;font-size:12.5px;text-align:left;background:none;border:0;border-left:3px solid transparent;color:#cfd5da;padding:10px;cursor:pointer;}
+  .nav-btn:hover{background:#1f262c;}
+  .nav-btn.on{background:#262e35;border-left-color:var(--amber);color:#fff;}
+  .exp{margin-top:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .exp summary{cursor:pointer;background:var(--amber);color:var(--ink);padding:10px;font-weight:600;list-style:none;text-align:center;white-space:nowrap;}
+  .exp summary::-webkit-details-marker{display:none;}
+  .exp .xp{display:flex;flex-direction:column;gap:1px;margin-top:2px;}
+  .exp .xp button{font:inherit;background:#262e35;color:#fff;border:0;padding:9px;cursor:pointer;text-align:left;}
+  .exp .xp button:hover{background:#34404a;}
+  .view{display:none;}.view.on{display:block;}
+  .kpis.auto{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));}
+  .in{font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--line);background:#fff;padding:8px 10px;color:var(--ink);}
+  .btn{font-family:'IBM Plex Mono',monospace;font-size:12px;border:1.5px solid var(--ink);background:var(--ink);color:#fff;padding:8px 12px;cursor:pointer;}
+  .btn.ghost{background:#fff;color:var(--ink);}.btn.red{background:var(--red);border-color:var(--red);}
+  .btn:hover{opacity:.85;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .msg{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin:6px 0 14px;min-height:16px;}
+  .empty{background:var(--panel);border:1px dashed var(--ink-soft);padding:30px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-soft);}
+  .panel table.datatable tbody td{white-space:normal;}
+  .bar{display:inline-block;height:6px;background:var(--blue);vertical-align:middle;margin-left:6px;}
+  .dev-pos{color:var(--red);}.dev-neg{color:var(--green);}
+  .bgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px;}
+  .bgrid label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px;}
+  .bgrid input{width:100%;}
+  .frm label{display:flex;flex-direction:column;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+  @media (max-width:1100px){.wrap{padding:22px 16px 70px;}}
+  @media (max-width:860px){
+    body{padding-left:0;padding-top:50px;}
+    aside.side{inset:0 0 auto 0;width:auto;height:auto;flex-direction:row;overflow-x:auto;padding:4px 6px;align-items:center;gap:0;}
+    aside.side .logo{display:none;}
+    .nav-btn{white-space:nowrap;border-left:0;border-bottom:3px solid transparent;padding:12px 10px;}
+    .nav-btn.on{border-bottom-color:var(--amber);}
+    .exp{margin:0 0 0 auto;}.exp .xp{position:fixed;top:50px;right:6px;width:170px;}
+    .bgrid{grid-template-columns:repeat(3,1fr);}
+    .kpi .value{font-size:20px;}
+  }
+
+  .modal{display:none;position:fixed;inset:0;background:rgba(20,24,28,.6);z-index:60;overflow:auto;padding:20px;}
+  .modal.on{display:block;}
+  .mbox{background:#fff;max-width:920px;margin:0 auto;padding:22px;border:1px solid var(--ink);}
+  .mbox h2{margin:0 0 12px;font-size:17px;}
+  .mbox fieldset{border:1px solid var(--line);margin:0 0 12px;padding:10px 12px 12px;}
+  .mbox legend{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);padding:0 6px;}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
+  .fgrid label{display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);}
+  .fgrid .in{width:100%;}
+</style>
+</head>
+<body>
+<aside class="side" id="side"><div class="logo">Frota<small id="coName">Base de dados</small></div><div id="nav" style="display:contents"></div><details class="exp"><summary>Exportar Dashboard</summary><div class="xp"><button onclick="exXLS()">Excel (.xlsx)</button><button onclick="exCSV()">CSV</button><button onclick="exPDF()">PDF</button></div></details></aside>
+<div class="modal" id="modal" onclick="if(event.target===this)closeM()"><div class="mbox" id="mbox"></div></div>
+<div id="dropOverlay">Larga o ficheiro .xlsx aqui para atualizar a frota</div>
+<div class="wrap">
+<div class="view on" id="v-frota">
+<div class="empty" id="emptyNote" style="margin-bottom:16px">Base de dados vazia — vai a <b>Importação Frota</b> (ficheiro ou colagem) ou a <b>Base de Dados</b> para adicionar viaturas.</div>
+
+  <header class="top">
+    <div class="brandblock">
+      <h1>Frota</h1>
+      <div class="sub" id="subLine"></div>
+    </div>
+    <div class="upload-zone">
+      <div class="upload-status" id="uploadStatus"></div>
+      <label class="filebtn">
+        Carregar ficheiro mensal
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+      </label>
+    </div>
+  </header>
+
+  <section class="kpis" id="kpiRow"></section>
+
+  <section class="panel full" style="margin-bottom:16px;">
+    <h2>Filtros</h2>
+    <div class="desc">Aplicam-se a todos os KPIs, gráficos e à tabela abaixo</div>
+    <div class="filters">
+      <input type="text" id="searchBox" placeholder="Pesquisar matrícula, condutor ou nº de contrato…">
+      <div class="msfilter" id="filterCompany"><button type="button" class="ms-btn">Empresa: todos</button><div class="ms-panel"></div></div>
+      <div class="msfilter" id="filterBrand"><button type="button" class="ms-btn">Marca: todos</button><div class="ms-panel"></div></div>
+      <div class="msfilter" id="filterFuel"><button type="button" class="ms-btn">Combustível: todos</button><div class="ms-panel"></div></div>
+      <div class="msfilter" id="filterStatus"><button type="button" class="ms-btn">Estado: todos</button><div class="ms-panel"></div></div>
+      <div class="msfilter" id="filterContractType"><button type="button" class="ms-btn">Tipo de contrato: todos</button><div class="ms-panel"></div></div>
+      <button id="clearFilters" class="clearbtn">Limpar filtros</button>
+      <div class="count" id="rowCount"></div>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <h2>Marcas</h2>
+      <div class="desc">Top 10 por número de viaturas</div>
+      <div class="chartbox"><canvas id="chartBrand"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Combustível</h2>
+      <div class="desc">Distribuição da frota por tipo de combustível</div>
+      <div class="chartbox"><canvas id="chartFuel"></canvas></div>
+    </div>
+  </section>
+
+  <section class="panel full" style="margin-bottom:16px;">
+    <h2>Renovações por mês</h2>
+    <div class="desc">Contratos com fim de vigência nos próximos 24 meses</div>
+    <div class="chartbox tall"><canvas id="chartRenewals"></canvas></div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <h2>Empresas</h2>
+      <div class="desc">Top 8 empresas por número de viaturas</div>
+      <div class="chartbox"><canvas id="chartCompany"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Custo por locadora</h2>
+      <div class="desc">Renda mensal total (c/IVA) por locadora</div>
+      <div class="chartbox"><canvas id="chartRental"></canvas></div>
+    </div>
+  </section>
+
+  <section class="panel full" style="margin-bottom:16px;">
+    <h2>Próximas renovações</h2>
+    <div class="desc">12 contratos mais próximos do fim, por ordem de urgência</div>
+    <div class="renew-head">
+      <div>Matrícula</div><div>Condutor / Empresa</div><div class="r-right">Fim de contrato</div><div class="r-right">Dias</div><div class="r-right r-cost">Renda/mês</div>
+    </div>
+    <div class="renew-list" id="renewList"></div>
+  </section>
+
+  <section class="panel full">
+    <h2>Frota completa</h2>
+    <div class="desc">Ordenação por coluna — clicar num cabeçalho para ordenar</div>
+    <div style="overflow-x:auto;">
+      <table class="datatable">
+        <thead>
+          <tr>
+            <th data-key="License Plate">Matrícula</th>
+            <th data-key="Brand">Marca / Modelo</th>
+            <th data-key="Employee Name">Condutor</th>
+            <th data-key="Company Name">Empresa</th>
+            <th data-key="Contract Type">Tipo</th>
+            <th data-key="Fuel Type">Combustível</th>
+            <th data-key="Rental Company">Locadora</th>
+            <th data-key="End Date" class="sorted">Fim de contrato</th>
+            <th data-key="Monthly Income With VAT" class="num">Renda/mês</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <div id="pageInfo">Página 1 de 1</div>
+      <div>
+        <button id="prevPage" disabled="">← Anterior</button>
+        <button id="nextPage">Seguinte →</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="note">Dados guardados apenas neste browser (IndexedDB). Usa Exportar cópia de segurança (Configurações) para guardar ou mover a base.</footer>
+</div>
+<div class="view" id="v-imp"></div>
+<div class="view" id="v-db"></div>
+<div class="view" id="v-custos"></div>
+<div class="view" id="v-fin"></div>
+<div class="view" id="v-evol"></div>
+<div class="view" id="v-esg"></div>
+<div class="view" id="v-cfg"></div>
+</div>
+<script>
+const DEFAULT_DATA = [];
+
+
+const COLS={contract:'Contract Number',ctype:'Contract Type',start:'Start Date',end:'End Date',months:'Months',kmsc:'Contracted Kms',monthly:'Monthly Income With VAT',monthlyx:'Monthly Income Without VAT',kmsmore:'Extra Kms',kmsless:'Under Kms',country:'Country',cstatus:'Contract Status',rental:'Rental Company',empno:'Employee Number',employee:'Employee Name',company:'Company Name',costcenter:'Cost Center',fgroup:'Functional Group',plate:'License Plate',brand:'Brand',model:'Model',version:'Version',fuel:'Fuel Type',vtype:'Vehicle Type',vstatus:'Vehicle Status',co2:'CO2 Emissions',consumption:'Avg Comb Consumption'};
+
+function translateContractType(v){
+  if(v==='Attributed') return 'Atribuída';
+  if(v==='Service') return 'Serviço';
+  return v || '—';
+}
+
+let STATE = {
+  data: [],
+  filtered: [],
+  page: 1,
+  pageSize: 50,
+  sortKey: 'End Date',
+  sortDir: 1,
+  meta: {source:'default', uploadedAt:null, fileName:null},
+  filters: {}
+};
+
+let charts = {};
+
+function fmtEUR(n){
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  return new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+}
+function fmtNum(n){
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  return new Intl.NumberFormat('pt-PT').format(n);
+}
+function fmtDate(s){
+  if(!s) return '—';
+  const d = new Date(s);
+  if(isNaN(d)) return '—';
+  return d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function daysUntil(s){
+  if(!s) return null;
+  const end = new Date(s);
+  if(isNaN(end)) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((end-today)/86400000);
+}
+function isElectrified(fuel){return /el[eé]c?tric|electric|plug|bev|phev/i.test(fuel||'');}
+
+function groupCount(rows, key){
+  const m = new Map();
+  rows.forEach(r=>{
+    const v = r[key] || '—';
+    m.set(v,(m.get(v)||0)+1);
+  });
+  return m;
+}
+function groupSum(rows, key, valKey){
+  const m = new Map();
+  rows.forEach(r=>{
+    const v = r[key] || '—';
+    const val = Number(r[valKey])||0;
+    m.set(v,(m.get(v)||0)+val);
+  });
+  return m;
+}
+function topN(map, n){
+  return [...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n);
+}
+
+const PALETTE = ['#14181C','#35577A','#C68A16','#2F6E4F','#B23A2E','#7A6A9C','#55606B','#9A7B4F','#4C8B7C','#8A4B3C'];
+
+function destroyChart(id){
+  if(charts[id]){ charts[id].destroy(); delete charts[id]; }
+}
+
+function baseChartOpts(extra){
+  return Object.assign({
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    font:{family:"'IBM Plex Mono',monospace"}
+  }, extra||{});
+}
+
+function renderKPIs(rows){
+  const total = rows.length;
+  const monthlyTotal = rows.reduce((s,r)=>s+(Number(r[COLS.monthly])||0),0);
+  const avgMonthly = total? monthlyTotal/total : 0;
+  const electrified = rows.filter(r=>isElectrified(r[COLS.fuel])).length;
+  const electrifiedPct = total? (electrified/total*100) : 0;
+  const upcoming12m = rows.filter(r=>{
+    const d = daysUntil(r[COLS.end]);
+    return d!==null && d>=0 && d<=365;
+  }).length;
+
+  const kpis = [
+    {label:'Frota total', value:fmtNum(total), foot:'viaturas ativas no cadastro'},
+    {label:'Renda mensal total', value:fmtEUR(monthlyTotal), foot:'c/IVA, soma de todos os contratos'},
+    {label:'Renda média / viatura', value:fmtEUR(avgMonthly), foot:'c/IVA'},
+    {label:'Frota eletrificada', value:electrifiedPct.toFixed(0)+'%', cls:'electric', foot:electrified+' viaturas elétricas ou plug-in'},
+    {label:'Renovações em 12 meses', value:fmtNum(upcoming12m), cls: upcoming12m>0?'alert':'', foot:'contratos a terminar nos próximos 12 meses'}
+  ];
+
+  document.getElementById('kpiRow').innerHTML = kpis.map(k=>`
+    <div class="kpi">
+      <div class="label">${k.label}</div>
+      <div class="value ${k.cls||''}">${k.value}</div>
+      <div class="foot">${k.foot}</div>
+    </div>
+  `).join('');
+}
+
+function renderBrandChart(rows){
+  destroyChart('brand');
+  const m = groupCount(rows, COLS.brand);
+  const top = topN(m,10).reverse();
+  const ctx = document.getElementById('chartBrand');
+  charts.brand = new Chart(ctx,{
+    type:'bar',
+    data:{labels:top.map(t=>t[0]), datasets:[{data:top.map(t=>t[1]), backgroundColor:'#35577A', borderRadius:1}]},
+    options: baseChartOpts({
+      indexAxis:'y',
+      scales:{
+        x:{grid:{color:'#E3E6E0'}, ticks:{font:{family:"'IBM Plex Mono',monospace",size:10}}},
+        y:{grid:{display:false}, ticks:{font:{family:"'IBM Plex Mono',monospace",size:10.5}}}
+      }
+    })
+  });
+}
+
+function renderFuelChart(rows){
+  destroyChart('fuel');
+  const m = groupCount(rows, COLS.fuel);
+  const entries = [...m.entries()].sort((a,b)=>b[1]-a[1]);
+  const ctx = document.getElementById('chartFuel');
+  charts.fuel = new Chart(ctx,{
+    type:'bar',
+    data:{labels:entries.map(t=>t[0]), datasets:[{data:entries.map(t=>t[1]), backgroundColor: entries.map(t=> t[0].toLowerCase().includes('eletric')||t[0].toLowerCase().includes('plug') ? '#2F6E4F':'#C68A16'), borderRadius:1}]},
+    options: baseChartOpts({
+      scales:{
+        y:{grid:{color:'#E3E6E0'}, ticks:{font:{family:"'IBM Plex Mono',monospace",size:10}}},
+        x:{grid:{display:false}, ticks:{font:{family:"'IBM Plex Mono',monospace",size:9.5}, maxRotation:20, minRotation:0}}
+      }
+    })
+  });
+}
+
+function renderCompanyChart(rows){
+  destroyChart('company');
+  const m = groupCount(rows, COLS.company);
+  const top = topN(m,8).reverse();
+  const short = s => s.length>26? s.slice(0,24)+'…': s;
+  const ctx = document.getElementById('chartCompany');
+  charts.company = new Chart(ctx,{
+    type:'bar',
+    data:{labels:top.map(t=>short(t[0])), datasets:[{data:top.map(t=>t[1]), backgroundColor:'#14181C', borderRadius:1}]},
+    options: baseChartOpts({
+      indexAxis:'y',
+      scales:{
+        x:{grid:{color:'#E3E6E0'}, ticks:{font:{family:"'IBM Plex Mono',monospace",size:10}}},
+        y:{grid:{display:false}, ticks:{font:{family:"'IBM Plex Mono',monospace",size:10}}}
+      }
+    })
+  });
+}
+
+function renderRentalChart(rows){
+  destroyChart('rental');
+  const m = groupSum(rows, COLS.rental, COLS.monthly);
+  const entries = [...m.entries()].sort((a,b)=>b[1]-a[1]);
+  const ctx = document.getElementById('chartRental');
+  charts.rental = new Chart(ctx,{
+    type:'bar',
+    data:{labels:entries.map(t=>t[0]), datasets:[{data:entries.map(t=>Math.round(t[1])), backgroundColor:'#C68A16', borderRadius:1}]},
+    options: baseChartOpts({
+      scales:{
+        y:{grid:{color:'#E3E6E0'}, ticks:{font:{family:"'IBM Plex Mono',monospace",size:10}, callback:v=>fmtEUR(v)}},
+        x:{grid:{display:false}, ticks:{font:{family:"'IBM Plex Mono',monospace",size:10}}}
+      },
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>fmtEUR(c.parsed.y)}}}
+    })
+  });
+}
+
+function renderRenewalsChart(rows){
+  destroyChart('renewalsChart');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const months = [];
+  for(let i=0;i<24;i++){
+    const d = new Date(today.getFullYear(), today.getMonth()+i, 1);
+    months.push({key:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label:d.toLocaleDateString('pt-PT',{month:'short',year:'2-digit'})});
+  }
+  const counts = new Map(months.map(m=>[m.key,0]));
+  rows.forEach(r=>{
+    const s = r[COLS.end];
+    if(!s) return;
+    const d = new Date(s);
+    if(isNaN(d)) return;
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    if(counts.has(key)) counts.set(key, counts.get(key)+1);
+  });
+  const ctx = document.getElementById('chartRenewals');
+  charts.renewalsChart = new Chart(ctx,{
+    type:'bar',
+    data:{labels:months.map(m=>m.label), datasets:[{data:months.map(m=>counts.get(m.key)), backgroundColor:'#35577A', borderRadius:1, barPercentage:.7}]},
+    options: baseChartOpts({
+      scales:{
+        y:{grid:{color:'#E3E6E0'}, ticks:{font:{family:"'IBM Plex Mono',monospace",size:10}, precision:0}},
+        x:{grid:{display:false}, ticks:{font:{family:"'IBM Plex Mono',monospace",size:9.5}}}
+      }
+    })
+  });
+}
+
+function renderRenewalsList(rows){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = rows
+    .map(r=>({r, d:daysUntil(r[COLS.end])}))
+    .filter(x=>x.d!==null && x.d>=0)
+    .sort((a,b)=>a.d-b.d)
+    .slice(0,12);
+
+  document.getElementById('renewList').innerHTML = upcoming.map(x=>{
+    const r = x.r;
+    let cls = 'd-ok';
+    if(x.d<=30) cls='d-urgent'; else if(x.d<=90) cls='d-soon';
+    return `<div class="renew-row">
+      <div class="plate">${r[COLS.plate]||'—'}</div>
+      <div><div>${r[COLS.employee]||'—'}</div><div class="who">${r[COLS.company]||''}</div></div>
+      <div style="text-align:right;">${fmtDate(r[COLS.end])}</div>
+      <div class="days ${cls}">${x.d} d</div>
+      <div class="cost">${fmtEUR(r[COLS.monthly])}</div>
+    </div>`;
+  }).join('') || '<div style="color:var(--ink-soft);font-size:12.5px;">Sem contratos com data de fim futura.</div>';
+}
+
+const FILTER_DEFS = [
+  {id:'filterCompany', key:COLS.company, label:'Empresa'},
+  {id:'filterBrand', key:COLS.brand, label:'Marca'},
+  {id:'filterFuel', key:COLS.fuel, label:'Combustível'},
+  {id:'filterStatus', key:COLS.vstatus, label:'Estado'},
+  {id:'filterContractType', key:COLS.ctype, label:'Tipo de contrato', labelFn:translateContractType}
+];
+
+function updateMsButtonLabel(def){
+  const container = document.getElementById(def.id);
+  const btn = container.querySelector('.ms-btn');
+  const n = STATE.filters[def.id].size;
+  btn.textContent = n===0 ? `${def.label}: todos` : `${def.label} (${n})`;
+  btn.classList.toggle('active', n>0);
+}
+
+function populateFilterOptions(rows){
+  FILTER_DEFS.forEach(def=>{
+    if(!STATE.filters[def.id]) STATE.filters[def.id] = new Set();
+    const vals = [...new Set(rows.map(r=>r[def.key]).filter(Boolean))].sort();
+    STATE.filters[def.id] = new Set([...STATE.filters[def.id]].filter(v=>vals.includes(v)));
+
+    const container = document.getElementById(def.id);
+    const panel = container.querySelector('.ms-panel');
+    panel.innerHTML = vals.map(v=>{
+      const checked = STATE.filters[def.id].has(v) ? 'checked' : '';
+      const text = def.labelFn ? def.labelFn(v) : v;
+      return `<label class="ms-opt"><input type="checkbox" value="${v.toString().replace(/"/g,'&quot;')}" ${checked}> ${text}</label>`;
+    }).join('') || '<div class="ms-empty">sem opções</div>';
+
+    updateMsButtonLabel(def);
+  });
+}
+
+function applyFilters(){
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+
+  STATE.filtered = STATE.data.filter(r=>{
+    for(const def of FILTER_DEFS){
+      const set = STATE.filters[def.id];
+      if(set && set.size>0 && !set.has(r[def.key])) return false;
+    }
+    if(q){
+      const hay = [r[COLS.plate], r[COLS.employee], r[COLS.contract]].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  STATE.page = 1;
+  sortFiltered();
+  updateDependents(STATE.filtered);
+}
+
+function updateDependents(rows){
+  renderKPIs(rows);
+  renderBrandChart(rows);
+  renderFuelChart(rows);
+  renderCompanyChart(rows);
+  renderRentalChart(rows);
+  renderRenewalsChart(rows);
+  renderRenewalsList(rows);
+  renderTable();
+}
+
+function sortFiltered(){
+  const key = STATE.sortKey, dir = STATE.sortDir;
+  STATE.filtered.sort((a,b)=>{
+    let av = a[key], bv = b[key];
+    if(key===COLS.monthly){ av = Number(av)||0; bv = Number(bv)||0; }
+    else if(key===COLS.end){ av = av? new Date(av).getTime(): -Infinity; bv = bv? new Date(bv).getTime(): -Infinity; }
+    else { av = (av||'').toString().toLowerCase(); bv = (bv||'').toString().toLowerCase(); }
+    if(av<bv) return -1*dir;
+    if(av>bv) return 1*dir;
+    return 0;
+  });
+}
+
+function renderTable(){
+  const start = (STATE.page-1)*STATE.pageSize;
+  const pageRows = STATE.filtered.slice(start, start+STATE.pageSize);
+  document.getElementById('tableBody').innerHTML = pageRows.map(r=>{
+    const fuel = r[COLS.fuel]||'—';
+    const tagClass = isElectrified(fuel) ? 'electric' : 'fuel';
+    const ctypeClass = r[COLS.ctype]==='Service' ? 'service' : 'attributed';
+    return `<tr onclick="openEdit('${pk(r[COLS.plate])}')" style="cursor:pointer">
+      <td class="mono">${r[COLS.plate]||'—'}</td>
+      <td>${r[COLS.brand]||'—'} <span style="color:var(--ink-soft);">${r[COLS.model]||''}</span></td>
+      <td>${r[COLS.employee]||'—'}</td>
+      <td>${r[COLS.company]||'—'}</td>
+      <td><span class="tag ${ctypeClass}">${translateContractType(r[COLS.ctype])}</span></td>
+      <td><span class="tag ${tagClass}">${fuel}</span></td>
+      <td>${r[COLS.rental]||'—'}</td>
+      <td class="mono">${fmtDate(r[COLS.end])}</td>
+      <td class="num mono">${fmtEUR(r[COLS.monthly])}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('rowCount').textContent = fmtNum(STATE.filtered.length)+' viaturas';
+  const totalPages = Math.max(1, Math.ceil(STATE.filtered.length/STATE.pageSize));
+  document.getElementById('pageInfo').textContent = `Página ${STATE.page} de ${totalPages}`;
+  document.getElementById('prevPage').disabled = STATE.page<=1;
+  document.getElementById('nextPage').disabled = STATE.page>=totalPages;
+
+  document.querySelectorAll('table.datatable thead th').forEach(th=>{
+    th.classList.toggle('sorted', th.dataset.key===STATE.sortKey);
+  });
+}
+
+function renderAll(rows){
+  populateFilterOptions(rows);
+  applyFilters();
+}
+
+function initFileHandlers(){
+  const input = document.getElementById('fileInput');
+  input.addEventListener('change', e=>{
+    if(e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  const overlay = document.getElementById('dropOverlay');
+  let dragCounter = 0;
+  window.addEventListener('dragenter', e=>{
+    e.preventDefault();
+    dragCounter++;
+    overlay.classList.add('active');
+  });
+  window.addEventListener('dragleave', e=>{
+    e.preventDefault();
+    dragCounter--;
+    if(dragCounter<=0){ overlay.classList.remove('active'); dragCounter=0; }
+  });
+  window.addEventListener('dragover', e=> e.preventDefault());
+  window.addEventListener('drop', e=>{
+    e.preventDefault();
+    dragCounter=0;
+    overlay.classList.remove('active');
+    const file = e.dataTransfer.files[0];
+    if(file) handleFile(file);
+  });
+}
+
+function initFilterHandlers(){
+  document.getElementById('searchBox').addEventListener('input', applyFilters);
+
+  FILTER_DEFS.forEach(def=>{
+    const container = document.getElementById(def.id);
+    const btn = container.querySelector('.ms-btn');
+    const panel = container.querySelector('.ms-panel');
+
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const wasOpen = container.classList.contains('open');
+      document.querySelectorAll('.msfilter.open').forEach(el=>el.classList.remove('open'));
+      if(!wasOpen) container.classList.add('open');
+    });
+
+    panel.addEventListener('change', e=>{
+      if(e.target.matches('input[type=checkbox]')){
+        const v = e.target.value;
+        const set = STATE.filters[def.id];
+        if(e.target.checked) set.add(v); else set.delete(v);
+        updateMsButtonLabel(def);
+        applyFilters();
+      }
+    });
+  });
+
+  document.addEventListener('click', e=>{
+    document.querySelectorAll('.msfilter.open').forEach(el=>{
+      if(!el.contains(e.target)) el.classList.remove('open');
+    });
+  });
+
+  document.getElementById('clearFilters').addEventListener('click', ()=>{
+    document.getElementById('searchBox').value = '';
+    FILTER_DEFS.forEach(def=>{
+      STATE.filters[def.id] = new Set();
+      const container = document.getElementById(def.id);
+      container.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);
+      container.classList.remove('open');
+      updateMsButtonLabel(def);
+    });
+    applyFilters();
+  });
+  document.getElementById('prevPage').addEventListener('click', ()=>{
+    if(STATE.page>1){ STATE.page--; renderTable(); }
+  });
+  document.getElementById('nextPage').addEventListener('click', ()=>{
+    const totalPages = Math.max(1, Math.ceil(STATE.filtered.length/STATE.pageSize));
+    if(STATE.page<totalPages){ STATE.page++; renderTable(); }
+  });
+  document.querySelectorAll('table.datatable thead th').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.dataset.key;
+      if(STATE.sortKey===key){ STATE.sortDir *= -1; } else { STATE.sortKey = key; STATE.sortDir = 1; }
+      sortFiltered();
+      renderTable();
+    });
+  });
+}
+
+
+/* ===== v2: plataforma de gestão de frota ===== */
+const $=id=>document.getElementById(id),p2=n=>String(n).padStart(2,'0');
+const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const pk=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const TIPOS=['Rendas','Combustível/Energia','Sinistros','Via Verde','Outros'];
+const TN=new Map(TIPOS.map(t=>[norm(t),t]));
+function tipoOf(v){const n=norm(v);if(TN.has(n))return TN.get(n);
+  if(/renda|leasing|aluguer/.test(n))return'Rendas';
+  if(/combust|energia|eletric|carreg|gasol|diesel/.test(n))return'Combustível/Energia';
+  if(/sinistr|franquia/.test(n))return'Sinistros';
+  if(/viaverde|portag/.test(n))return'Via Verde';
+  return'Outros';}
+const KEYS=['frota','custos','cfg','bud','batches','lastImp'];
+const DB={frota:[],custos:[],cfg:{kmMes:1500,co2Def:120,empresa:''},bud:{},batches:[],lastImp:null};
+const FIN={y:'all'},BUD={y:String(new Date().getFullYear())};let CUR='frota';
+const fmt2=n=>new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR',maximumFractionDigits:3}).format(n||0);
+const pct=n=>(n>=0?'+':'')+(n*100).toFixed(1).replace('.',',')+'%';
+
+/* ---- persistência (IndexedDB, com fallback para localStorage) ---- */
+const idb=()=>new Promise((ok,ko)=>{const r=indexedDB.open('frota-limpa',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error);});
+async function kvGet(k){try{const d=await idb();return await new Promise(ok=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(undefined);});}catch(e){try{return JSON.parse(localStorage.getItem('frotalimpa-'+k));}catch(_){return undefined;}}}
+async function kvSet(k,v){try{const d=await idb();await new Promise((ok,ko)=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=ok;t.onerror=ko;});}catch(e){try{localStorage.setItem('frotalimpa-'+k,JSON.stringify(v));}catch(_){}}}
+const save=k=>kvSet(k,DB[k]);
+
+/* ---- leitura de ficheiros ---- */
+const num=v=>typeof v==='number'?v:(parseFloat(String(v??'').replace(/[€\s]/g,'').replace(/\.(?=\d{3}(\D|$))/g,'').replace(',','.'))||0);
+function toISO(v){
+  if(v instanceof Date&&!isNaN(v)){v=new Date(v.getTime()+432e5);return v.getFullYear()+'-'+p2(v.getMonth()+1)+'-'+p2(v.getDate());}
+  if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);return d?d.y+'-'+p2(d.m)+'-'+p2(d.d):null;}
+  const s=String(v||'').trim();let m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/);
+  if(m)return m[3]+'-'+p2(m[2])+'-'+p2(m[1]);m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[0]:null;
+}
+async function readSheet(f){const wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:null});}
+function say(m){const a=$('uploadStatus'),b=$('msg-'+CUR);if(a)a.textContent=m;if(b)b.textContent=m;}
+function refresh(){STATE.data=DB.frota.filter(r=>!r._inativa);setSubline();renderAll(STATE.data);$('coName').textContent=DB.cfg.empresa||'Base de dados';document.title='Frota'+(DB.cfg.empresa?' · '+DB.cfg.empresa:'');$('emptyNote').style.display=DB.frota.length?'none':'block';if(CUR!=='frota')VIEWS[CUR]();}
+function setSubline(){const n=STATE.data.length,i=DB.frota.length-n;$('subLine').textContent=fmtNum(n)+' viaturas ativas'+(i?' · '+fmtNum(i)+' inativas':'')+(DB.lastImp?' · última importação: '+fmtDate(DB.lastImp.at)+' ('+DB.lastImp.file+')':' · base vazia');}
+
+/* ---- importação de custos (acumulado histórico) ---- */
+async function importCustos(file){
+  say('a processar ficheiro…');
+  const rows=await readSheet(file);if(!rows.length)throw new Error('ficheiro vazio.');
+  const hk={};Object.keys(rows[0]).forEach(h=>hk[norm(h)]=h);
+  if(!hk.data||!hk.matricula||!hk.valor)throw new Error('colunas esperadas: Data, Matrícula, Tipo Custo, Fornecedor, Valor.');
+  const id=Date.now(),recs=[];let bad=0;
+  rows.forEach(r=>{const d=toISO(r[hk.data]),p=pk(r[hk.matricula]),v=num(r[hk.valor]);
+    if(!d||!p||!isFinite(v)){bad++;return;}
+    const o={d,p,t:tipoOf(r[hk.tipocusto]),f:String(r[hk.fornecedor]||'').trim(),v,b:id};
+    if(hk.km&&num(r[hk.km]))o.k=num(r[hk.km]);recs.push(o);});
+  if(!recs.length)throw new Error('nenhum registo válido.');
+  if($('cRep')&&$('cRep').checked){const ms=new Set(recs.map(r=>r.d.slice(0,7)));DB.custos=DB.custos.filter(r=>!ms.has(r.d.slice(0,7)));}
+  recs.forEach(r=>DB.custos.push(r));
+  const ds=recs.map(r=>r.d).sort(),known=new Set(DB.frota.map(r=>pk(r[COLS.plate])));
+  const unk=new Set(recs.filter(r=>!known.has(r.p)).map(r=>r.p)).size;
+  DB.batches.push({id,file:file.name,at:new Date().toISOString(),n:recs.length,total:recs.reduce((s,r)=>s+r.v,0),de:ds[0],ate:ds[ds.length-1]});
+  await Promise.all([save('custos'),save('batches')]);
+  say(`${recs.length} registos importados${bad?' · '+bad+' ignorados':''}${unk?' · '+unk+' matrículas fora do cadastro':''}.`);
+  VIEWS[CUR]();
+}
+async function handleFile(file){
+  try{if(CUR==='custos')await importCustos(file);else await importFrota(file);}
+  catch(e){console.error(e);say('Erro: '+e.message);}
+}
+/* ---- cálculos ---- */
+const yrs=()=>[...new Set(DB.custos.map(r=>r.d.slice(0,4)))].sort();
+const sel=y=>y==='all'?DB.custos:DB.custos.filter(r=>r.d.startsWith(y));
+const vmap=()=>new Map(DB.frota.map(r=>[pk(r[COLS.plate]),r]));
+function sumBy(rows,fn){const m=new Map();rows.forEach(r=>{const k=fn(r)||'—';m.set(k,(m.get(k)||0)+r.v);});return m;}
+function fin(y){
+  const rows=sel(y),V=vmap(),tot=rows.reduce((s,r)=>s+r.v,0),nM=new Set(rows.map(r=>r.d.slice(0,7))).size||1;
+  const kmP=new Map(),pl=new Set();rows.forEach(r=>{pl.add(r.p);if(r.k)kmP.set(r.p,(kmP.get(r.p)||0)+r.k);});
+  const km=p=>kmP.get(p)||DB.cfg.kmMes*nM;let kmT=0;pl.forEach(p=>kmT+=km(p));
+  const dr=new Set();pl.forEach(p=>{const d=(V.get(p)||{})[COLS.employee];if(d)dr.add(d);});
+  const byT=sumBy(rows,r=>r.t),T=k=>byT.get(k)||0;
+  const g=f=>[...sumBy(rows,r=>f(V.get(r.p)||{}))].sort((a,b)=>b[1]-a[1]);
+  const vt=[...sumBy(rows,r=>r.p)].sort((a,b)=>b[1]-a[1]).map(([p,v])=>{const x=V.get(p)||{};return[x[COLS.plate]||p,x[COLS.employee]||'—',v,km(p),v/km(p)];});
+  return{rows,tot,byT,vt,
+    kp:[['Custo total da frota',tot],['Custo médio / viatura',tot/(pl.size||1)],['Custo / colaborador',tot/(dr.size||1)],['Custo / km',kmT?tot/kmT:0,1],['Rendas',T('Rendas')],['Combustível / Energia',T('Combustível/Energia')],['Via Verde',T('Via Verde')],['Sinistros',T('Sinistros')],['Outros',T('Outros')],['Operacionais (sem rendas)',tot-T('Rendas')]],
+    emp:g(x=>x[COLS.company]),loc:g(x=>x[COLS.rental]),mar:g(x=>x[COLS.brand]),cc:g(x=>x[COLS.costcenter]),fue:g(x=>x[COLS.fuel]),
+    sin:rows.filter(r=>r.t==='Sinistros').sort((a,b)=>b.v-a.v).slice(0,20)};
+}
+function monthly(y){
+  const rows=sel(y);let keys=[];
+  if(y!=='all')keys=MES.map((_,i)=>y+'-'+p2(i+1));
+  else{const s=[...new Set(rows.map(r=>r.d.slice(0,7)))].sort();
+    if(s.length){let[Y,M]=s[0].split('-').map(Number);const[Y2,M2]=s[s.length-1].split('-').map(Number);
+      while(Y<Y2||(Y===Y2&&M<=M2)){keys.push(Y+'-'+p2(M));if(++M>12){M=1;Y++;}}}}
+  const ix=new Map(keys.map((k,i)=>[k,i])),tot=keys.map(()=>0),by={};TIPOS.forEach(t=>by[t]=keys.map(()=>0));
+  rows.forEach(r=>{const i=ix.get(r.d.slice(0,7));if(i!==undefined){tot[i]+=r.v;by[by[r.t]?r.t:'Outros'][i]+=r.v;}});
+  return{keys,tot,by,labels:keys.map(k=>MES[+k.slice(5)-1]+'/'+k.slice(2,4))};
+}
+
+/* ---- helpers de UI ---- */
+const axf={font:{family:"'IBM Plex Mono',monospace",size:10}};
+function mk(id,cfg){destroyChart(id);const c=$(id);if(c)charts[id]=new Chart(c,cfg);}
+const grid={color:'#E3E6E0'};
+function hbar(id,en,color,n=10){en=en.slice(0,n).reverse();
+  mk(id,{type:'bar',data:{labels:en.map(e=>e[0].length>28?e[0].slice(0,26)+'…':e[0]),datasets:[{data:en.map(e=>Math.round(e[1])),backgroundColor:color,borderRadius:1}]},
+  options:baseChartOpts({indexAxis:'y',scales:{x:{grid,ticks:{...axf,callback:v=>fmtEUR(v)}},y:{grid:{display:false},ticks:axf}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtEUR(c.parsed.x)}}}})});}
+const P=(t,d,id,tall)=>`<div class="panel"><h2>${t}</h2><div class="desc">${d||''}</div><div class="chartbox${tall?' tall':''}"><canvas id="${id}"></canvas></div></div>`;
+const head=(t,s,r)=>`<header class="top"><div class="brandblock"><h1>${t}</h1><div class="sub">${s||''}</div></div><div class="upload-zone">${r||''}</div></header>`;
+const empty=m=>`<div class="empty">${m||'Ainda não há custos. Importa um ficheiro Excel no separador <b>Custos</b>.'}</div>`;
+const TB=(h,rows,nums=[])=>`<div style="overflow-x:auto"><table class="datatable"><thead><tr>${h.map((x,i)=>`<th class="${nums.includes(i)?'num':''}">${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${nums.includes(i)?'num mono':''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+const fileBtn=(l)=>`<label class="filebtn">${l}<input type="file" accept=".xlsx,.xls" onchange="handleFile(this.files[0]);this.value=''"></label>`;
+function yearSel(){const ys=yrs();if(FIN.y!=='all'&&!ys.includes(FIN.y))FIN.y='all';
+  return `<select class="in" onchange="FIN.y=this.value;VIEWS[CUR]()"><option value="all">Todos os anos</option>${ys.map(y=>`<option ${FIN.y===y?'selected':''}>${y}</option>`).join('')}</select>`;}
+const kpiRow=a=>`<section class="kpis auto">${a.map(k=>`<div class="kpi"><div class="label">${k[0]}</div><div class="value ${k[3]||''}">${k[2]===1?fmt2(k[1]):k[2]==='t'?k[1]:fmtEUR(k[1])}</div>${k[4]?`<div class="foot">${k[4]}</div>`:''}</div>`).join('')}</section>`;
+const topTbl=(en,tot,n=20)=>TB(['#','Nome','Custo total','% total'],en.slice(0,n).map((e,i)=>[i+1,esc(e[0]),fmtEUR(e[1]),((e[1]/(tot||1))*100).toFixed(1).replace('.',',')+'%<span class="bar" style="width:'+Math.round(e[1]/(en[0][1]||1)*60)+'px"></span>']),[2,3]);
+
+/* ---- vistas ---- */
+function renderCustos(){
+  const c=DB.custos,ds=c.map(r=>r.d).sort();
+  $('v-custos').innerHTML=head('Custos da Frota','Tipologias: Rendas · Combustível/Energia · Sinistros · Via Verde · Outros',fileBtn('Carregar custos (.xlsx)')+`<button class="btn ghost" onclick="tpl('c')">Descarregar modelo</button>`)
+   +`<label class="row" style="font-family:'IBM Plex Mono',monospace;font-size:12px"><input type="checkbox" id="cRep" checked> Substituir registos dos meses presentes no ficheiro (evita duplicados ao reimportar)</label><div class="msg" id="msg-custos"></div>`
+   +kpiRow([['Registos acumulados',fmtNum(c.length),'t'],['Custo total',c.reduce((s,r)=>s+r.v,0)],['Período',c.length?ds[0].slice(0,7)+' → '+ds[ds.length-1].slice(0,7):'—','t'],['Viaturas com custos',fmtNum(new Set(c.map(r=>r.p)).size),'t']])
+   +`<section class="panel full" style="margin-top:16px"><h2>Resumo por tipologia</h2><div class="desc">Tipos não reconhecidos são classificados como Outros; Portagens → Via Verde, Elétricos → Combustível/Energia, Franquias → Sinistros</div>${TB(['Tipologia','Registos','Total','%'],TIPOS.map(t=>{const x=c.filter(r=>r.t===t),s=x.reduce((a,r)=>a+r.v,0),T=c.reduce((a,r)=>a+r.v,0)||1;return[t,fmtNum(x.length),fmtEUR(s),(s/T*100).toFixed(1).replace('.',',')+'%'];}),[1,2,3])}</section>`
+   +`<section class="panel full" style="margin-top:16px"><h2>Histórico de importações</h2><div class="desc">Colunas: Data · Matrícula · Tipo Custo · Fornecedor/Descrição · Valor (opcional: Km)</div>${DB.batches.length?TB(['Ficheiro','Importado','Período','Registos','Total',''],DB.batches.slice().reverse().map(b=>[esc(b.file),fmtDate(b.at),b.de.slice(0,7)+' → '+b.ate.slice(0,7),fmtNum(b.n),fmtEUR(b.total),`<button class="btn ghost" onclick="delBatch(${b.id})">Apagar</button>`]),[3,4]):'<div class="msg">Sem importações.</div>'}</section>`
+   +`<section class="panel full" style="margin-top:16px"><h2>Últimos registos</h2>${TB(['Data','Matrícula','Tipo','Fornecedor','Valor'],c.slice().sort((a,b)=>b.d.localeCompare(a.d)).slice(0,15).map(r=>[fmtDate(r.d),r.p,r.t,esc(r.f),fmtEUR(r.v)]),[4])}</section>`;
+}
+async function delBatch(id){if(!confirm('Apagar todos os registos desta importação?'))return;DB.custos=DB.custos.filter(r=>r.b!==id);DB.batches=DB.batches.filter(b=>b.id!==id);await Promise.all([save('custos'),save('batches')]);renderCustos();}
+
+function renderFin(){
+  const el=$('v-fin');if(!DB.custos.length){el.innerHTML=head('Dashboard Financeiro')+empty();return;}
+  const F=fin(FIN.y);
+  el.innerHTML=head('Dashboard Financeiro',FIN.y==='all'?'Todos os anos':'Ano '+FIN.y,yearSel())+kpiRow(F.kp)
+   +`<section class="grid2" style="margin-top:16px">${P('Custo por tipo','Distribuição do custo total','cTipo')}${P('Custo por empresa','Top 10','cEmp')}${P('Custo por locadora','','cLoc')}${P('Custo por marca','Top 10','cMar')}${P('Custo por combustível','','cFue')}${P('Custo por viatura','Top 10','cVei')}</section>`
+   +`<h2 style="margin:22px 0 10px">Análises avançadas</h2><section class="grid2">
+    <div class="panel full"><h2>Top 20 viaturas mais caras</h2><div class="desc">Custo/km usa os km do ficheiro (coluna Km) ou a estimativa das Configurações</div>${TB(['#','Matrícula','Condutor','Custo total','Custo/km'],F.vt.slice(0,20).map((v,i)=>[i+1,v[0],esc(v[1]),fmtEUR(v[2]),fmt2(v[4])]),[3,4])}</div>
+    <div class="panel"><h2>Top 20 centros de custo</h2>${topTbl(F.cc,F.tot)}</div><div class="panel"><h2>Top 20 empresas</h2>${topTbl(F.emp,F.tot)}</div>
+    <div class="panel"><h2>Top 20 marcas</h2>${topTbl(F.mar,F.tot)}</div><div class="panel"><h2>Top 20 locadoras</h2>${topTbl(F.loc,F.tot)}</div>
+    <div class="panel full"><h2>Top 20 sinistros</h2>${F.sin.length?TB(['Data','Matrícula','Condutor','Fornecedor','Valor'],F.sin.map(r=>{const x=vmap().get(r.p)||{};return[fmtDate(r.d),x[COLS.plate]||r.p,esc(x[COLS.employee]||'—'),esc(r.f),fmtEUR(r.v)];}),[4]):'<div class="msg">Sem sinistros no período.</div>'}</div></section>`;
+  const tp=[...F.byT].sort((a,b)=>b[1]-a[1]);
+  mk('cTipo',{type:'doughnut',data:{labels:tp.map(t=>t[0]),datasets:[{data:tp.map(t=>Math.round(t[1])),backgroundColor:tp.map((_,i)=>PALETTE[i%PALETTE.length])}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:axf.font,boxWidth:10}},tooltip:{callbacks:{label:c=>c.label+': '+fmtEUR(c.parsed)}}}}});
+  hbar('cEmp',F.emp,'#14181C');hbar('cLoc',F.loc,'#C68A16');hbar('cMar',F.mar,'#35577A');hbar('cFue',F.fue,'#2F6E4F');hbar('cVei',F.vt.map(v=>[v[0],v[2]]),'#B23A2E');
+}
+const GR=TIPOS.map(t=>[t,t]);
+function renderEvol(){
+  const el=$('v-evol');if(!DB.custos.length){el.innerHTML=head('Evolução')+empty();return;}
+  const M=monthly(FIN.y);const ys=[...new Set([...yrs(),String(new Date().getFullYear()),String(new Date().getFullYear()+1)])].sort();
+  if(!ys.includes(BUD.y))BUD.y=ys[0];
+  el.innerHTML=head('Evolução','Análise temporal dos custos',yearSel())
+   +`<section class="panel full" style="margin-bottom:16px"><h2>Evolução mensal — total de custos</h2><div class="chartbox tall"><canvas id="eTot"></canvas></div></section>`
+   +`<section class="panel full" style="margin-bottom:16px"><h2>Evolução mensal por tipologia</h2><div class="desc">Rendas, Combustível/Energia, Sinistros, Via Verde e Outros (empilhado)</div><div class="chartbox tall"><canvas id="eTipo"></canvas></div></section>`
+   +`<section class="grid2">${P('Evolução anual','Total por ano','eAno')}${P('Comparação entre anos','Custo mensal, ano a ano','eYoY')}</section>`
+   +`<section class="panel full"><h2>Budget vs Real</h2><div class="row"><select class="in" onchange="BUD.y=this.value;renderEvol()">${ys.map(y=>`<option ${BUD.y===y?'selected':''}>${y}</option>`).join('')}</select><button class="btn ghost" onclick="distB()">Distribuir orçamento anual ÷ 12</button></div><div id="bud"></div></section>`;
+  mk('eTot',{type:'bar',data:{labels:M.labels,datasets:[{data:M.tot.map(Math.round),backgroundColor:'#14181C',borderRadius:1}]},options:baseChartOpts({scales:{y:{grid,ticks:{...axf,callback:v=>fmtEUR(v)}},x:{grid:{display:false},ticks:axf}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtEUR(c.parsed.y)}}}})});
+  mk('eTipo',{type:'bar',data:{labels:M.labels,datasets:GR.map((g,i)=>({label:g[0],data:M.by[g[1]].map(Math.round),backgroundColor:PALETTE[i%PALETTE.length],borderRadius:1}))},options:{responsive:true,maintainAspectRatio:false,scales:{y:{stacked:true,grid,ticks:{...axf,callback:v=>fmtEUR(v)}},x:{stacked:true,grid:{display:false},ticks:axf}},plugins:{legend:{display:true,labels:{font:axf.font,boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtEUR(c.parsed.y)}}}}});
+  const ya=yrs().map(y=>[y,monthly(y).tot]);
+  mk('eAno',{type:'bar',data:{labels:ya.map(a=>a[0]),datasets:[{data:ya.map(a=>Math.round(a[1].reduce((s,v)=>s+v,0))),backgroundColor:'#35577A',borderRadius:1}]},options:baseChartOpts({scales:{y:{grid,ticks:{...axf,callback:v=>fmtEUR(v)}},x:{grid:{display:false},ticks:axf}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtEUR(c.parsed.y)}}}})});
+  mk('eYoY',{type:'line',data:{labels:MES,datasets:ya.map((a,i)=>({label:a[0],data:a[1].map(Math.round),borderColor:PALETTE[i%PALETTE.length],backgroundColor:PALETTE[i%PALETTE.length],tension:.25,pointRadius:2,borderWidth:2}))},options:{responsive:true,maintainAspectRatio:false,scales:{y:{grid,ticks:{...axf,callback:v=>fmtEUR(v)}},x:{grid:{display:false},ticks:axf}},plugins:{legend:{display:true,labels:{font:axf.font,boxWidth:10}}}}});
+  renderBud();
+}
+const bud=()=>DB.bud[BUD.y]||(DB.bud[BUD.y]={m:Array(12).fill(0),a:0});
+function setB(i,v){bud().m[i]=num(v);save('bud');renderBud();}
+function setBA(v){bud().a=num(v);save('bud');renderBud();}
+function distB(){const b=bud();b.m=Array(12).fill(b.a/12);save('bud');renderBud();}
+function renderBud(){
+  const b=bud(),real=Array(12).fill(0);DB.custos.forEach(r=>{if(r.d.startsWith(BUD.y))real[+r.d.slice(5,7)-1]+=r.v;});
+  const sm=b.m.reduce((s,v)=>s+v,0),oa=b.a||sm,ra=real.reduce((s,v)=>s+v,0);
+  const dv=(o,r)=>{const d=r-o;return`<td class="num mono ${d>0?'dev-pos':'dev-neg'}">${o?fmtEUR(d):'—'}</td><td class="num mono ${d>0?'dev-pos':'dev-neg'}">${o?pct(d/o):'—'}</td>`;};
+  const el=$('bud');if(!el)return;
+  el.innerHTML=`<div class="row"><label class="frm"><span>Orçamento anual (€)</span><input class="in" type="number" step="any" value="${b.a||''}" onchange="setBA(this.value)"></label></div>
+   <div class="bgrid">${b.m.map((v,i)=>`<label>${MES[i]}<input class="in" type="number" step="any" value="${v||''}" onchange="setB(${i},this.value)"></label>`).join('')}</div>
+   <div class="chartbox"><canvas id="eBud"></canvas></div>
+   <div style="overflow-x:auto;margin-top:12px"><table class="datatable"><thead><tr><th>Período</th><th class="num">Orçamento</th><th class="num">Real</th><th class="num">Desvio €</th><th class="num">Desvio %</th></tr></thead><tbody>${b.m.map((v,i)=>`<tr><td>${MES[i]}</td><td class="num mono">${fmtEUR(v)}</td><td class="num mono">${fmtEUR(real[i])}</td>${dv(v,real[i])}</tr>`).join('')}<tr style="font-weight:600"><td>Ano ${BUD.y}</td><td class="num mono">${fmtEUR(oa)}</td><td class="num mono">${fmtEUR(ra)}</td>${dv(oa,ra)}</tr></tbody></table></div>`;
+  mk('eBud',{type:'bar',data:{labels:MES,datasets:[{type:'bar',label:'Real',data:real.map(Math.round),backgroundColor:'#35577A'},{type:'line',label:'Orçamento',data:b.m.map(Math.round),borderColor:'#C68A16',backgroundColor:'#C68A16',borderWidth:2,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{grid,ticks:{...axf,callback:v=>fmtEUR(v)}},x:{grid:{display:false},ticks:axf}},plugins:{legend:{display:true,labels:{font:axf.font,boxWidth:10}}}}});
+}
+
+/* ---- ESG (estimativa com datas de contrato + km configurados) ---- */
+const co2=r=>{const c=Number(r[COLS.co2])||0;return c>0?c:(/^\s*(el[eé]c?tric|electric|bev)/i.test(r[COLS.fuel]||'')?0:DB.cfg.co2Def);};
+function esgMonth(y,m){
+  const ms=y+'-'+p2(m+1)+'-01',me=y+'-'+p2(m+1)+'-31',now=new Date(),isNow=y===now.getFullYear()&&m===now.getMonth();let n=0,e=0,co=0;
+  DB.frota.forEach(r=>{
+    let on;if(isNow)on=!r._inativa;else{const s=r[COLS.start]||'0000',e0=r[COLS.end]||'9999',en=r._inativaEm&&r._inativaEm<e0?r._inativaEm:e0;on=s<=me&&en>=ms;}
+    if(!on)return;n++;if(isElectrified(r[COLS.fuel]))e++;co+=co2(r)*DB.cfg.kmMes/1e6;});
+  return{n,e,co};
+}
+function renderEsg(){
+  const now=new Date(),Y=now.getFullYear(),cm=now.getMonth(),mths=[];
+  for(let i=23;i>=0;i--){const d=new Date(Y,cm-i,1);mths.push([d.getFullYear(),d.getMonth()]);}
+  const S=mths.map(([y,m])=>esgMonth(y,m)),cur=S[S.length-1];
+  const ytd=y=>{let s=0;for(let m=0;m<=cm;m++)s+=esgMonth(y,m).co;return s;};
+  const a=ytd(Y),b=ytd(Y-1);
+  $('v-esg').innerHTML=head('Indicadores ESG','Estimativa: g/km do cadastro × '+fmtNum(DB.cfg.kmMes)+' km/mês por viatura (ajustável em Configurações)')
+   +kpiRow([['Frota eletrificada',(cur.n?cur.e/cur.n*100:0).toFixed(1).replace('.',',')+'%','t','electric',cur.e+' de '+cur.n+' viaturas (elétricas + plug-in)'],['Emissões CO₂ '+Y+' (YTD)',a.toFixed(1).replace('.',',')+' t','t'],['Emissões CO₂ '+(Y-1)+' (mesmo período)',b.toFixed(1).replace('.',',')+' t','t'],['Redução vs ano anterior',b?pct((a-b)/b*-1):'—','t',a<=b?'electric':'alert']])
+   +`<section class="grid2" style="margin-top:16px">${P('Evolução mensal da eletrificação','% de viaturas elétricas ou plug-in, últimos 24 meses','gEl',1)}${P('Emissões CO₂ mensais (t)','Estimativa, últimos 24 meses','gCo',1)}</section>`;
+  const lb=mths.map(([y,m])=>MES[m]+'/'+String(y).slice(2));
+  mk('gEl',{type:'line',data:{labels:lb,datasets:[{data:S.map(s=>+(s.n?s.e/s.n*100:0).toFixed(1)),borderColor:'#2F6E4F',backgroundColor:'#DCEAE1',fill:true,tension:.25,pointRadius:2}]},options:baseChartOpts({scales:{y:{grid,ticks:{...axf,callback:v=>v+'%'}},x:{grid:{display:false},ticks:axf}}})});
+  mk('gCo',{type:'bar',data:{labels:lb,datasets:[{data:S.map(s=>+s.co.toFixed(2)),backgroundColor:'#55606B',borderRadius:1}]},options:baseChartOpts({scales:{y:{grid,ticks:axf},x:{grid:{display:false},ticks:axf}}})});
+}
+
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
+const backup=()=>dl(new Blob([JSON.stringify(DB)],{type:'application/json'}),'Frota_backup_'+new Date().toISOString().slice(0,10)+'.json');
+
+/* ---- exportação ---- */
+function exportSheets(y){
+  const F=fin(y),M=monthly(y),n=(x,d=2)=>+(+x).toFixed(d),g=(h,en)=>[[h,'Custo total'],...en.map(e=>[e[0],n(e[1])])];
+  const S=[['KPIs',[['Indicador','Valor'],...F.kp.map(k=>[k[0],n(k[1],3)])]],
+   ['Mensal',[['Mês',...TIPOS,'Total'],...M.keys.map((k,i)=>[k,...TIPOS.map(t=>n(M.by[t][i])),n(M.tot[i])])]],
+   ['Top Viaturas',[['Matrícula','Condutor','Custo total','Km','Custo/km'],...F.vt.slice(0,20).map(v=>[v[0],v[1],n(v[2]),Math.round(v[3]),n(v[4],3)])]],
+   ['Centros Custo',g('Centro de custo',F.cc.slice(0,20))],['Empresas',g('Empresa',F.emp.slice(0,20))],['Marcas',g('Marca',F.mar.slice(0,20))],['Locadoras',g('Locadora',F.loc.slice(0,20))],
+   ['Sinistros',[['Data','Matrícula','Fornecedor','Valor'],...F.sin.map(r=>[r.d,r.p,r.f,n(r.v)])]]];
+  if(y!=='all'&&DB.bud[y]){const b=DB.bud[y],re=MES.map((_,i)=>M.tot[i]||0);S.push(['Budget vs Real',[['Mês','Orçamento','Real','Desvio €','Desvio %'],...MES.map((m,i)=>[m,n(b.m[i]),n(re[i]),n(re[i]-b.m[i]),b.m[i]?n((re[i]-b.m[i])/b.m[i]*100,1):''])]]);}
+  return{S,F,M};
+}
+const stamp=()=>new Date().toISOString().slice(0,10);
+function exXLS(){
+  const{S}=exportSheets(FIN.y),wb=XLSX.utils.book_new();
+  S.forEach(([nm,a])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),nm));
+  const cols=FLD;
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(STATE.data.map(r=>{const o={};cols.forEach(c=>o[c[1]]=r[c[0]]);return o;})),'Frota');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sel(FIN.y).map(r=>({Data:r.d,Matrícula:r.p,'Tipo Custo':r.t,Fornecedor:r.f,Valor:r.v}))),'Custos');
+  XLSX.writeFile(wb,'Dashboard_Frota_'+stamp()+'.xlsx');
+}
+function exCSV(){
+  const{S}=exportSheets(FIN.y),ws=XLSX.utils.aoa_to_sheet([...S[0][1],[],...S[1][1]]);
+  dl(new Blob(['\ufeff'+XLSX.utils.sheet_to_csv(ws,{FS:';'})],{type:'text/csv;charset=utf-8'}),'Dashboard_Frota_'+stamp()+'.csv');
+}
+function exPDF(){
+  const{jsPDF}=window.jspdf,doc=new jsPDF({unit:'pt',format:'a4'}),{F,M}=exportSheets(FIN.y),cl=s=>String(s).replace(/[\u00a0\u202f]/g,' ');
+  doc.setFontSize(16);doc.text('Dashboard Frota — MC',40,44);doc.setFontSize(9);doc.text('Período: '+(FIN.y==='all'?'todos os anos':FIN.y)+' · '+new Date().toLocaleDateString('pt-PT')+' · '+STATE.data.length+' viaturas ativas',40,58);
+  doc.autoTable({startY:70,head:[['Indicador','Valor']],body:F.kp.map(k=>[k[0],cl(k[2]?fmt2(k[1]):fmtEUR(k[1]))]),styles:{fontSize:8},headStyles:{fillColor:[20,24,28]}});
+  doc.autoTable({head:[['Mês','Total']],body:M.keys.map((k,i)=>[k,cl(fmtEUR(M.tot[i]))]),styles:{fontSize:8},headStyles:{fillColor:[20,24,28]},margin:{top:40}});
+  doc.autoTable({head:[['Matrícula','Condutor','Custo total','Custo/km']],body:F.vt.slice(0,20).map(v=>[v[0],v[1],cl(fmtEUR(v[2])),cl(fmt2(v[4]))]),styles:{fontSize:8},headStyles:{fillColor:[20,24,28]},margin:{top:40}});
+  Object.values(charts).filter(c=>c.canvas&&c.canvas.isConnected&&c.canvas.offsetWidth>0).forEach(c=>{
+    const w=515,h=Math.min(260,w*c.canvas.offsetHeight/c.canvas.offsetWidth);doc.addPage();doc.addImage(c.toBase64Image(),'PNG',40,40,w,h);});
+  doc.save('Dashboard_Frota_'+stamp()+'.pdf');
+}
+
+/* ---- navegação ---- */
+const VIEWS={frota:()=>updateDependents(STATE.filtered),imp:renderImp,db:renderDb,custos:renderCustos,fin:renderFin,evol:renderEvol,esg:renderEsg,cfg:renderCfg};
+const NAV=[['frota','Dashboard Frota'],['imp','Importação Frota'],['db','Base de Dados'],['custos','Custos'],['fin','Dashboard Financeiro'],['evol','Evolução'],['esg','ESG'],['cfg','Configurações']];
+function show(v){CUR=v;document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('on',b.dataset.v===v));VIEWS[v]();window.scrollTo(0,0);}
+function buildNav(){$('nav').innerHTML=NAV.map(n=>`<button class="nav-btn${n[0]==='frota'?' on':''}" data-v="${n[0]}" onclick="show('${n[0]}')">${n[1]}</button>`).join('');}
+
+async function init(){
+  initFileHandlers();initFilterHandlers();buildNav();
+  for(const k of KEYS){const v=await kvGet(k);if(v!==undefined&&v!==null)DB[k]=v;}
+  DB.cfg=Object.assign({kmMes:1500,co2Def:120},DB.cfg);
+  {let mg=false;DB.custos.forEach(r=>{const t=tipoOf(r.t);if(t!==r.t){r.t=t;mg=true;}});if(mg)save('custos');}
+  refresh();
+}
+
+
+/* ===== v3: base limpa · esquema completo · carregamento no browser · edição ===== */
+const SC=[
+ ['Contrato',[[COLS.contract,'Nº do contrato','text'],[COLS.ctype,'Tipo de contrato','text'],[COLS.start,'Data início','date'],[COLS.end,'Data fim','date'],[COLS.months,'Meses contratados','number'],[COLS.kmsc,'Kms contratados','number'],[COLS.monthly,'Renda c/IVA','number'],[COLS.monthlyx,'Renda s/IVA','number'],[COLS.kmsmore,'Kms a mais','number'],[COLS.kmsless,'Kms a menos','number'],[COLS.country,'País','text'],[COLS.cstatus,'Status do contrato','text'],[COLS.rental,'Locadora','text']]],
+ ['Colaborador',[[COLS.empno,'Nº de colaborador','text'],[COLS.employee,'Nome do colaborador','text'],[COLS.company,'Empresa','text'],[COLS.costcenter,'Centro de custo','text'],[COLS.fgroup,'Grupo funcional','text']]],
+ ['Viatura',[[COLS.plate,'Matrícula','text'],[COLS.brand,'Marca','text'],[COLS.model,'Modelo','text'],[COLS.version,'Versão','text'],[COLS.fuel,'Tipo de combustível','text'],[COLS.vtype,'Tipo de veículo','text'],[COLS.vstatus,'Status do veículo','text'],[COLS.co2,'Emissão CO2 (g/km)','number'],[COLS.consumption,'Consumo médio','number']]]];
+const FLD=SC.flatMap(g=>g[1]),TYPE=Object.fromEntries(FLD.map(f=>[f[0],f[2]])),MAPF={};
+FLD.forEach(f=>{MAPF[norm(f[1])]=f[0];MAPF[norm(f[0])]=f[0];});
+Object.entries({numerodocontrato:COLS.contract,ncontrato:COLS.contract,contrato:COLS.contract,tipocontrato:COLS.ctype,meses:COLS.months,kms:COLS.kmsc,rendamensal:COLS.monthly,monthlyrent:COLS.monthly,statuscontrato:COLS.cstatus,estadocontrato:COLS.cstatus,numerocolaborador:COLS.empno,colaborador:COLS.employee,nome:COLS.employee,condutor:COLS.employee,driver:COLS.employee,company:COLS.company,combustivel:COLS.fuel,fuel:COLS.fuel,status:COLS.vstatus,statusveiculo:COLS.vstatus,estado:COLS.vstatus,emissaoco2:COLS.co2,co2:COLS.co2,consumo:COLS.consumption,tipoveiculo:COLS.vtype}).forEach(([k,v])=>MAPF[k]=v);
+const hoje=()=>new Date().toISOString().slice(0,10);
+const cv=(f,v)=>TYPE[f]==='date'?toISO(v):TYPE[f]==='number'?num(v):String(v).trim();
+function parsePaste(t){const L=t.replace(/\r/g,'').split('\n').filter(x=>x.trim());if(L.length<2)return[];
+  const d=L[0].includes('\t')?'\t':L[0].includes(';')?';':',',H=L[0].split(d).map(s=>s.trim());
+  return L.slice(1).map(l=>{const c=l.split(d),o={};H.forEach((h,i)=>o[h]=(c[i]??'').trim()||null);return o;});}
+
+async function importRows(rows,name){
+  say('a processar…');if(!rows.length)throw new Error('sem linhas para importar.');
+  const map=Object.keys(rows[0]).map(h=>[h,MAPF[norm(h)]]).filter(x=>x[1]);
+  if(!map.some(x=>x[1]===COLS.plate))throw new Error('não encontrei a coluna "Matrícula".');
+  const rm=!$('iRem')||$('iRem').checked,idx=new Map(DB.frota.map(r=>[pk(r[COLS.plate]),r])),seen=new Set(),h=hoje();let nov=0,upd=0,rem=0;
+  rows.forEach(row=>{
+    const rec={};map.forEach(([c,f])=>{const v=row[c];if(v==null||v==='')return;const x=cv(f,v);if(x!=null)rec[f]=x;});
+    const k=pk(rec[COLS.plate]);if(!k)return;seen.add(k);
+    const inat=/inativ/i.test(rec[COLS.vstatus]||''),cur=idx.get(k);
+    if(cur){let ch=!!cur._inativa!==inat;for(const f in rec)if(String(cur[f]??'')!==String(rec[f]))ch=true;
+      Object.assign(cur,rec);if(inat){cur._inativa=true;cur._inativaEm=cur._inativaEm||h;}else{delete cur._inativa;delete cur._inativaEm;}if(ch)upd++;}
+    else{const n={};Object.values(COLS).forEach(c=>n[c]=null);Object.assign(n,rec);if(inat){n._inativa=true;n._inativaEm=h;}DB.frota.push(n);idx.set(k,n);nov++;}
+  });
+  if(rm)DB.frota.forEach(r=>{if(!seen.has(pk(r[COLS.plate]))&&!r._inativa){r._inativa=true;r._inativaEm=h;r[COLS.vstatus]='Inativa';rem++;}});
+  const tot=DB.frota.filter(r=>!r._inativa).length;
+  DB.lastImp={nov,upd,rem,tot,file:name,at:new Date().toISOString()};
+  await Promise.all([save('frota'),save('lastImp')]);refresh();
+  say(`${nov} novas · ${upd} atualizadas · ${rem} removidas (inativas) · total ${tot}`);
+}
+async function importFrota(file){await importRows(await readSheet(file),file.name);}
+function doPaste(){importRows(parsePaste($('paste').value),'colagem no browser').then(()=>{$('paste').value='';}).catch(e=>say('Erro: '+e.message));}
+function tpl(k){
+  const a=k==='f'?[FLD.map(f=>f[1]),['100001','Atribuída','2026-01-01','2030-12-31',48,60000,450,365.85,0,0,'Portugal','Ativo','LEASYS','12345','Nome Apelido','Empresa SA','CC123','G5','AA-00-AA','Renault','Clio','1.0 TCe','Gasoline','Passenger','Assigned',120,5.5]]
+   :[['Data','Matrícula','Tipo Custo','Fornecedor','Valor'],['01-01-2026','AA-00-AA','Rendas','Leasys',350],['01-01-2026','AA-00-AA','Combustível/Energia','Galp',85],['05-01-2026','AA-00-AA','Via Verde','Via Verde',25],['10-01-2026','AA-00-AA','Sinistros','Seguradora',420],['12-01-2026','AA-00-AA','Outros','IMT (2.ª via de documento)',30]];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),'Modelo');XLSX.writeFile(wb,k==='f'?'Modelo_Frota.xlsx':'Modelo_Custos.xlsx');
+}
+
+/* ---- edição / criação de registos ---- */
+let EDIT=null;
+function openEdit(k){
+  const r=k?DB.frota.find(x=>pk(x[COLS.plate])===k):null;EDIT=r;
+  $('mbox').innerHTML=`<h2>${r?'Editar viatura '+esc(r[COLS.plate]):'Nova viatura'}</h2>`+SC.map(([g,fs])=>`<fieldset><legend>${g}</legend><div class="fgrid">${fs.map(([key,l,t])=>{const i=FLD.findIndex(f=>f[0]===key),v=r?r[key]:'';
+    return`<label>${l}<input class="in" id="f${i}" type="${t==='date'?'date':t==='number'?'number':'text'}" ${t==='number'?'step="any"':''} ${t==='text'&&key!==COLS.plate?`list="dl${i}"`:''} value="${esc(v??'')}"></label>`;}).join('')}</div></fieldset>`).join('')
+   +`<label class="row" style="font-family:'IBM Plex Mono',monospace;font-size:12px"><input type="checkbox" id="fIn" ${r&&r._inativa?'checked':''}> Viatura inativa</label>`
+   +`<div class="row"><button class="btn" onclick="saveEdit()">Guardar</button><button class="btn ghost" onclick="closeM()">Cancelar</button>${r?'<button class="btn red" onclick="delRec()">Eliminar</button>':''}</div><div class="msg" id="fErr"></div>`
+   +FLD.map((f,i)=>{if(f[2]!=='text'||f[0]===COLS.plate)return'';const vs=[...new Set(DB.frota.map(x=>x[f[0]]).filter(Boolean))].sort().slice(0,80);return`<datalist id="dl${i}">${vs.map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`;}).join('');
+  $('modal').classList.add('on');
+}
+const closeM=()=>$('modal').classList.remove('on');
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM();});
+async function saveEdit(){
+  const o={};FLD.forEach((f,i)=>{const v=$('f'+i).value.trim();o[f[0]]=v===''?null:f[2]==='number'?num(v):v;});
+  const p=pk(o[COLS.plate]);if(!p){$('fErr').textContent='A matrícula é obrigatória.';return;}
+  if(DB.frota.some(x=>x!==EDIT&&pk(x[COLS.plate])===p)){$('fErr').textContent='Já existe uma viatura com esta matrícula.';return;}
+  let ren=null;
+  if(EDIT){const old=pk(EDIT[COLS.plate]);if(old!==p)ren=old;Object.assign(EDIT,o);}
+  else{const n={};Object.values(COLS).forEach(c=>n[c]=null);Object.assign(n,o);DB.frota.push(n);EDIT=n;}
+  if($('fIn').checked){EDIT._inativa=true;EDIT._inativaEm=EDIT._inativaEm||hoje();}else{delete EDIT._inativa;delete EDIT._inativaEm;}
+  if(ren){DB.custos.forEach(r=>{if(r.p===ren)r.p=p;});await save('custos');}
+  await save('frota');closeM();refresh();say('Registo guardado.');
+}
+async function delRec(){if(!EDIT||!confirm('Eliminar esta viatura da base de dados?'))return;DB.frota=DB.frota.filter(x=>x!==EDIT);await save('frota');closeM();refresh();}
+
+/* ---- vista Base de Dados ---- */
+const DBV={q:'',p:1};
+function renderDb(){
+  $('v-db').innerHTML=head('Base de Dados','Todos os registos (ativos e inativos) — clica numa linha para editar',`<button class="btn" onclick="openEdit()">+ Nova viatura</button>`)
+   +`<div class="filters"><input type="text" placeholder="Pesquisar matrícula, colaborador, contrato, empresa, marca…" value="${esc(DBV.q)}" oninput="DBV.q=this.value;DBV.p=1;dbRows()"><div class="count" id="dbCnt"></div></div><section class="panel full"><div id="dbt"></div><div class="pager"><div id="dbPg"></div><div><button onclick="DBV.p--;dbRows()" id="dbPrev">← Anterior</button> <button onclick="DBV.p++;dbRows()" id="dbNext">Seguinte →</button></div></div></section>`;
+  dbRows();
+}
+function dbRows(){
+  const q=DBV.q.toLowerCase(),rows=DB.frota.filter(r=>!q||[r[COLS.plate],r[COLS.employee],r[COLS.contract],r[COLS.company],r[COLS.brand],r[COLS.model]].join(' ').toLowerCase().includes(q));
+  const n=25,pages=Math.max(1,Math.ceil(rows.length/n));DBV.p=Math.min(Math.max(1,DBV.p),pages);
+  $('dbt').innerHTML=rows.length?`<div style="overflow-x:auto"><table class="datatable"><thead><tr>${['Matrícula','Marca / Modelo','Colaborador','Empresa','Contrato','Locadora','Fim','Renda c/IVA','Estado'].map((h,i)=>`<th class="${i===7?'num':''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.slice((DBV.p-1)*n,DBV.p*n).map(r=>`<tr onclick="openEdit('${pk(r[COLS.plate])}')" style="cursor:pointer${r._inativa?';opacity:.55':''}"><td class="mono">${esc(r[COLS.plate])}</td><td>${esc(r[COLS.brand]||'—')} ${esc(r[COLS.model]||'')}</td><td>${esc(r[COLS.employee]||'—')}</td><td>${esc(r[COLS.company]||'—')}</td><td class="mono">${esc(r[COLS.contract]||'—')}</td><td>${esc(r[COLS.rental]||'—')}</td><td class="mono">${fmtDate(r[COLS.end])}</td><td class="num mono">${fmtEUR(r[COLS.monthly])}</td><td>${r._inativa?'Inativa':esc(r[COLS.vstatus]||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Sem registos. Usa "+ Nova viatura" ou importa um ficheiro em Importação Frota.</div>';
+  $('dbCnt').textContent=fmtNum(rows.length)+' registos';$('dbPg').textContent=`Página ${DBV.p} de ${pages}`;$('dbPrev').disabled=DBV.p<=1;$('dbNext').disabled=DBV.p>=pages;
+}
+
+/* ---- vista Importação ---- */
+function renderImp(){
+  const L=DB.lastImp,ina=DB.frota.filter(r=>r._inativa);
+  $('v-imp').innerHTML=head('Importação de Frota','Por ficheiro Excel ou colando dados diretamente — a matrícula é a chave única',fileBtn('Carregar Excel (.xlsx)')+`<button class="btn ghost" onclick="tpl('f')">Descarregar modelo</button>`)
+   +`<label class="row" style="font-family:'IBM Plex Mono',monospace;font-size:12px"><input type="checkbox" id="iRem" checked> Marcar como inativas as viaturas que não constam do ficheiro/colagem (desligar se for um ficheiro parcial)</label><div class="msg" id="msg-imp"></div>`
+   +(L?kpiRow([['Viaturas novas',L.nov,'electric'],['Viaturas atualizadas',L.upd,''],['Viaturas removidas',L.rem,'alert'],['Total da frota',L.tot,'']].map(k=>[k[0],fmtNum(k[1]),'t',k[2],k[0]==='Total da frota'?'origem: '+esc(L.file):''])):'')
+   +`<section class="panel full" style="margin-top:16px"><h2>Colar dados do Excel</h2><div class="desc">Copia as células (com a linha de cabeçalhos) e cola aqui</div><textarea id="paste" class="in" style="width:100%;height:110px" placeholder="Matrícula&#9;Marca&#9;Modelo&#9;Nome do colaborador…"></textarea><div class="row" style="margin-top:8px"><button class="btn" onclick="doPaste()">Importar dados colados</button></div></section>`
+   +`<section class="grid2" style="margin-top:16px"><div class="panel"><h2>Campos aceites</h2><div class="desc">Cabeçalhos iguais a estes (sem distinção de acentos/maiúsculas)</div>${TB(['Grupo','Campos'],SC.map(([g,fs])=>[g,fs.map(f=>f[1]).join(' · ')]))}</div>
+   <div class="panel"><h2>Viaturas inativas (${ina.length})</h2><div class="desc">Ficam no histórico, fora dos dashboards</div>${ina.length?TB(['Matrícula','Colaborador','Inativa desde'],ina.slice(0,40).map(r=>[esc(r[COLS.plate]),esc(r[COLS.employee]||'—'),fmtDate(r._inativaEm)])):'<div class="msg">Nenhuma.</div>'}</div></section>`;
+}
+
+/* ---- configurações ---- */
+function renderCfg(){
+  const c=DB.cfg;
+  $('v-cfg').innerHTML=head('Configurações','Parâmetros de cálculo e gestão de dados guardados neste browser')
+   +`<section class="panel full"><h2>Parâmetros</h2><div class="row frm" style="margin-top:10px"><label>Nome da empresa / base<input class="in" value="${esc(c.empresa||'')}" onchange="DB.cfg.empresa=this.value.trim();save('cfg');refresh()"></label><label>Km médios por viatura / mês (custo/km e CO₂)<input class="in" type="number" value="${c.kmMes}" onchange="DB.cfg.kmMes=num(this.value)||1500;save('cfg')"></label><label>CO₂ por defeito (g/km) se não indicado<input class="in" type="number" value="${c.co2Def}" onchange="DB.cfg.co2Def=num(this.value)||120;save('cfg')"></label></div></section>
+   <section class="panel full" style="margin-top:16px"><h2>Dados guardados</h2><div class="desc">${fmtNum(DB.frota.length)} viaturas · ${fmtNum(DB.custos.length)} registos de custos · ${Object.keys(DB.bud).length} orçamentos anuais</div><div class="row" style="margin-top:10px">
+   <button class="btn ghost" onclick="backup()">Exportar cópia de segurança (JSON)</button><label class="btn ghost" style="cursor:pointer">Restaurar cópia (JSON)<input type="file" accept=".json" hidden onchange="restore(this.files[0]);this.value=''"></label>
+   <button class="btn red" onclick="wipe('custos')">Apagar custos</button><button class="btn red" onclick="wipe('bud')">Apagar orçamentos</button><button class="btn red" onclick="wipe('frota')">Limpar base de dados (viaturas)</button></div></section>`;
+}
+async function wipe(k){if(!confirm('Tens a certeza? Esta ação não pode ser revertida.'))return;
+  if(k==='custos'){DB.custos=[];DB.batches=[];await Promise.all([save('custos'),save('batches')]);}
+  else if(k==='bud'){DB.bud={};await save('bud');}
+  else{DB.frota=[];DB.lastImp=null;await Promise.all([save('frota'),save('lastImp')]);}
+  refresh();VIEWS[CUR]();}
+async function restore(f){try{const j=JSON.parse(await f.text());KEYS.forEach(k=>{if(j[k]!==undefined)DB[k]=j[k];});await Promise.all(KEYS.map(save));DB.cfg=Object.assign({kmMes:1500,co2Def:120},DB.cfg);refresh();say('Cópia restaurada.');}catch(e){say('Erro: ficheiro inválido.');}}
+
+init();
+</script>
+</body></html>
